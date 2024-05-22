@@ -17,7 +17,7 @@ let session = require('express-session');
 var conn = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "guro1234",
+    password: "1234",
     database: "godiva",
     dateStrings: 'date'
 });
@@ -31,6 +31,8 @@ conn.connect((err) => {
 });
 
 const app = express();
+
+app.use(express.static('public'));
 
 app.use(cookieParser('ncvka0e398423kpfd'));
 app.use(session({
@@ -85,14 +87,15 @@ app.post('/login', (req, res) => {
                 console.log("새로운 로그인");
                 res.render("index.ejs",{user:req.session.user}); 
             } else {
-                res.render('login.ejs');
+                res.render('login.ejs', {error: '아이디 혹은 비밀번호가 틀렸습니다.'});
+                //res.render('login.ejs', {error: '아이디나 비밀번호가 잘못되었습니다.'});
             }
         });
     } else {
-        //res.send('아이디와 비밀번호를 입력하세요!');
-        res.render('login.ejs');
+        res.render('login.ejs', {error: '아이디와 비밀번호를 입력하세요!'});
     }
 });
+
 
 app.get("/logout", function(req, res) {
     console.log("로그아웃");
@@ -130,4 +133,7 @@ app.get("/shop", function(req, res) {
 });
 app.get("/cart", function(req, res) {
     res.render("cart.ejs");
+});
+app.get("/inquiry_form", function(req, res) {
+    res.render("inquiry_form.ejs");
 });
