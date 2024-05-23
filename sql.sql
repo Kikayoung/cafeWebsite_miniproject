@@ -9,7 +9,7 @@ CREATE TABLE account (
     useremail VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-drop table USER;
+DROP TABLE user;
 FLUSH PRIVILEGES;
 
 CREATE TABLE inquiries (
@@ -24,14 +24,9 @@ CREATE TABLE inquiries (
     file_attachment VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-#drop table inquiries;
-select * from inquiries;
-show tables;
-
-
-
-
-
+#DROP TABLE inquiries;
+SELECT * FROM inquiries;
+SHOW TABLES;
 
 -- 상품 목록 테이블
 CREATE TABLE products (
