@@ -4,7 +4,20 @@ var bodyParser = require('body-parser');
 var sha = require('sha256');
 let cookieParser = require('cookie-parser');
 let session = require('express-session');
+const multer = require('multer');
+const path = require('path');
 
+//파일의 upload를 처리하는 미들웨어
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // var conn = mysql.createConnection({
 //     host: "210.117.212.134",
@@ -32,7 +45,9 @@ conn.connect((err) => {
 
 const app = express();
 
-app.use(express.static('public'));
+//app.use(express.static('public'));
+// 정적 파일 서빙 설정
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(cookieParser('ncvka0e398423kpfd'));
 app.use(session({
@@ -42,28 +57,29 @@ app.use(session({
 }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
+// EJS 설정
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 app.listen(8080, function() {
     console.log("포트 8080으로 서버 대기 중...");
 });
-
-app.get('/', function(req, res) {
-    res.render('index', { user: req.user });
+app.use((req, res, next) => {
+    res.locals.loggedIn = req.session.loggedIn || false;
+    res.locals.user = req.session.user || null;
+    next();
 });
 
-app.get("/index", function(req, res) {
-    res.render("index.ejs", { user: req.session.user });
+app.get(['/','/index'], (req, res) => {
+    res.render('index', { user: req.session.user, loggedIn: req.session.loggedIn });
 });
 
 app.get("/login", function(req, res) {
     if (req.session.user) {
-        res.render('index.ejs', { user: req.session.user });
-
+        res.redirect('/index');
     } else {
         res.render("login.ejs");
     }
 });
-
 
 app.post('/login', (req, res) => {
     console.log("아이디 : "+req.body.userid);
@@ -81,14 +97,13 @@ app.post('/login', (req, res) => {
             }
 
             if (results.length > 0) {
-                req.session.loggedin = true;
+                req.session.loggedIn = true;
                 req.session.userid = userid;
                 req.session.user = results[0];
                 console.log("새로운 로그인");
-                res.render("index.ejs",{user:req.session.user}); 
+                res.redirect('/index');
             } else {
                 res.render('login.ejs', {error: '아이디 혹은 비밀번호가 틀렸습니다.'});
-                //res.render('login.ejs', {error: '아이디나 비밀번호가 잘못되었습니다.'});
             }
         });
     } else {
@@ -96,11 +111,10 @@ app.post('/login', (req, res) => {
     }
 });
 
-
 app.get("/logout", function(req, res) {
     console.log("로그아웃");
     req.session.destroy();
-    res.redirect("/");
+    res.redirect("/index");
 });
 
 app.get("/signup", function(req, res) {
@@ -116,14 +130,52 @@ app.post('/signup', (req, res) => {
                 res.send('회원가입 중 오류가 발생했습니다: ' + err.message);
                 return;
             }
-            res.redirect('/');
+            res.redirect('/login');
         });
     } else {
-        
-        res.redirect('/');
-        //res.send('모든 항목를 입력하세요!');
+        res.render('signup.ejs', {error: '모든 항목을 입력하세요!'});
     }
 });
+
+
+// 문의 폼 라우트
+app.get('/inquiry_form', (req, res) => {
+    res.render('inquiry_form');
+});
+
+// app.get("/inquiry_form", function(req, res) {
+//     res.render("inquiry_form.ejs");
+// });
+
+// 문의 폼 제출 라우트
+app.post('/submit-inquiry', upload.single('file_attachment'), (req, res) => {
+    const { name, phone, emailId, emailDomain, inquiry_category, subject, content } = req.body;
+    const privacy_agreement = req.body.privacy_agreement === 'on' ? 1 : 0;
+    const isPrivacyAgreement = privacy_agreement === 1; 
+
+    let email = '';
+    if (emailDomain === 'direct') {
+        email = `${emailId}@${req.body.directDomain}`;
+    } else {
+        email = `${emailId}@${emailDomain}`;
+    }
+
+    const file_attachment = req.file ? req.file.filename : null;
+
+    const query = `INSERT INTO inquiries (name, phone, email, privacy_agreement, inquiry_category, subject, content, file_attachment) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    conn.query(query, [name, phone, email, isPrivacyAgreement, inquiry_category, subject, content, file_attachment], (err, result) => {
+        if (err) {
+            console.error('데이터 삽입 오류:', err);
+            res.status(500).render('inquiry_form', { error: '문의 제출에 실패하였습니다.', success: null });
+        } else {
+            res.render('inquiry_form', { error: null, success: '문의가 성공적으로 제출되었습니다.' });
+        }
+    });
+            
+});
+
 
 app.get("/about", function(req, res) {
     res.render("about.ejs");
@@ -134,6 +186,6 @@ app.get("/shop", function(req, res) {
 app.get("/cart", function(req, res) {
     res.render("cart.ejs");
 });
-app.get("/inquiry_form", function(req, res) {
-    res.render("inquiry_form.ejs");
+app.get("/profile", function(req, res) {
+    res.render("profile.ejs");
 });
