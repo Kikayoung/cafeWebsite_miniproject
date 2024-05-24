@@ -138,16 +138,11 @@ app.post('/signup', (req, res) => {
 });
 
 
-// 문의 폼 라우트
 app.get('/inquiry_form', (req, res) => {
     res.render('inquiry_form');
 });
 
-// app.get("/inquiry_form", function(req, res) {
-//     res.render("inquiry_form.ejs");
-// });
 
-// 문의 폼 제출 라우트
 app.post('/submit-inquiry', upload.single('file_attachment'), (req, res) => {
     const { name, phone, emailId, emailDomain, inquiry_category, subject, content } = req.body;
     const privacy_agreement = req.body.privacy_agreement === 'on' ? 1 : 0;
@@ -176,16 +171,46 @@ app.post('/submit-inquiry', upload.single('file_attachment'), (req, res) => {
             
 });
 
-
 app.get("/about", function(req, res) {
     res.render("about.ejs");
 });
+app.get("/profile", function(req, res) {
+    res.render("profile.ejs");
+});
+
+
+// ENUM 값 변환 함수
+// const getCategoryName = (category) => {
+//     const categories = {
+//         'order_payment_confirmation': '주문 및 결제 확인',
+//         'delivery_inquiry': '배송 문의',
+//         'cancellation_return_exchange_refund': '취소/반품/교환/환불',
+//         'other': '기타'
+//     };
+//     return categories[category] || category;
+// };
+
+app.get('/FAQlist', (req, res) => {
+    const query = `
+        SELECT id, subject AS title, inquiry_category, SUBSTRING(content, 1, 100) AS content_preview, created_at AS created
+        FROM inquiries`;
+        conn.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).send('Server Error');
+        }
+
+        // results.forEach(result => {
+        //     result.category = getCategoryName(result.inquiry_category);
+        // });
+
+        res.render('FAQlist', { data: results });
+    });
+});
+
 app.get("/shop", function(req, res) {
     res.render("shop.ejs");
 });
 app.get("/cart", function(req, res) {
     res.render("cart.ejs");
-});
-app.get("/profile", function(req, res) {
-    res.render("profile.ejs");
 });
