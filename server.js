@@ -63,6 +63,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.listen(8080, function() {
     console.log("포트 8080으로 서버 대기 중...");
 });
+
 app.use((req, res, next) => {
     res.locals.loggedIn = req.session.loggedIn || false;
     res.locals.user = req.session.user || null;
@@ -171,13 +172,23 @@ app.post('/submit-inquiry', upload.single('file_attachment'), (req, res) => {
             
 });
 
+// app.get("/submit-inquiry/:id", isAuthenticated, function(req, res) {
+//     let sql = "SELECT phone, email FROM inquiries WHERE id = ?";
+//     let params = req.params.id;
+//     conn.query(sql, params, function(err, result) {
+//       if (err) throw err;
+//       console.log(result);
+//       res.render("edit.ejs", { data: result });
+//     });
+// });
+
 app.get("/about", function(req, res) {
     res.render("about.ejs");
 });
+
 app.get("/profile", function(req, res) {
     res.render("profile.ejs");
 });
-
 
 // ENUM 값 변환 함수
 // const getCategoryName = (category) => {
